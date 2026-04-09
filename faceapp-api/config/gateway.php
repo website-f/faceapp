@@ -19,4 +19,9 @@ return [
         'public_base_url' => rtrim((string) env('FACE_PUBLIC_BASE_URL', ''), '/'),
         'gateway_base_url' => rtrim((string) env('GATEWAY_IMAGE_BASE_URL', ''), '/'),
     ],
+
+    'monitoring' => [
+        'heartbeat_interval_seconds' => (int) env('GATEWAY_HEARTBEAT_INTERVAL_SECONDS', 60),
+        'online_window_seconds' => (int) env('GATEWAY_ONLINE_WINDOW_SECONDS', 180),
+    ],
 ];

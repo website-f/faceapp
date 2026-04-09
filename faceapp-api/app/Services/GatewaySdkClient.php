@@ -14,6 +14,11 @@ class GatewaySdkClient
         return $this->post('/device/get');
     }
 
+    public function setServerConfig(array $config): array
+    {
+        return $this->post('/device/setSevConfig', $config);
+    }
+
     public function findPerson(string $employeeId): array
     {
         return $this->post('/person/find', [

@@ -16,6 +16,8 @@ This repository is now structured as one deployable stack for a fresh VPS.
 
 Both domains should resolve to the same VPS public IP.
 
+The Laravel monitor page lives at `/devices` on the API domain.
+
 ## Device Connectivity
 
 The physical face device does not use the website domains for its TCP channel unless the device supports domains explicitly. In most cases, configure the device to connect to:
@@ -44,6 +46,8 @@ cp .env.example .env
 - `LARAVEL_APP_KEY`
 - `GATEWAY_DEVICE_KEY`
 - `GATEWAY_SECRET`
+- `GATEWAY_HEARTBEAT_INTERVAL_SECONDS`
+- `GATEWAY_ONLINE_WINDOW_SECONDS`
 
 3. Point both DNS records to your VPS public IP.
 
@@ -69,6 +73,17 @@ docker compose up -d --build
 5. Gateway pushes the person and face to the device.
 6. Laravel verifies the face using `face/find`.
 7. The frontend receives success or failure.
+
+## Monitoring
+
+Open `https://FACEAPP_API_DOMAIN/devices` after deployment.
+
+From this page you can:
+
+- check whether the gateway can currently read the configured device
+- see recent heartbeat and access record callbacks
+- review enrollment failures
+- push the callback URLs back into the device using `device/setSevConfig`
 
 ## Important URL Detail
 
