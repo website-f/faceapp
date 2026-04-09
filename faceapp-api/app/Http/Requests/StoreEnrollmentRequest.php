@@ -14,8 +14,9 @@ class StoreEnrollmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_id' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z0-9]+$/'],
-            'name' => ['required', 'string', 'max:255'],
+            'managed_user_id' => ['nullable', 'integer', 'exists:managed_users,id'],
+            'employee_id' => ['required_without:managed_user_id', 'nullable', 'string', 'max:255', 'regex:/^[A-Za-z0-9]+$/'],
+            'name' => ['required_without:managed_user_id', 'nullable', 'string', 'max:255'],
             'person_type' => ['nullable', 'integer', 'in:1,2,3'],
             'verify_style' => ['nullable', 'integer'],
             'ac_group_number' => ['nullable', 'integer', 'min:0'],
@@ -45,6 +46,8 @@ class StoreEnrollmentRequest extends FormRequest
         return [
             'employee_id.regex' => 'The employee_id may only contain English letters and numbers. Do not use spaces, hyphens, or symbols.',
             'employee_id.max' => 'The employee_id may not be greater than 255 characters.',
+            'employee_id.required_without' => 'Select a managed user or provide an employee_id.',
+            'name.required_without' => 'Select a managed user or provide a name.',
         ];
     }
 }

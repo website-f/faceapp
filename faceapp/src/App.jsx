@@ -1,99 +1,177 @@
-import { useState, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Dashboard from './Dashboard'
 import Camera from './Camera'
 import Preview from './Preview'
-import { enrollFace } from './api'
+import { enrollFace, fetchAppDashboard } from './api'
 import './App.css'
 
-// ─── Mock user data ───────────────────────────────────────────────────────────
-const INITIAL_USER = {
-  name: 'Alexandra Chen',
-  role: 'Senior Engineer',
-  department: 'Platform Infrastructure',
-  employeeId: 'EMP4829',
-  joined: 'Mar 2022',
-  accessLevel: 'Level 3',
-  status: 'active',
-  faceId: null,
-  facePhoto: null,
-  enrolledAt: null,
-  activity: [
-    { label: 'Profile updated', time: 'Today, 09:14 AM', type: 'info', tag: 'Profile' },
-    { label: 'Access granted — Server Room B', time: 'Yesterday, 06:52 PM', type: 'success', tag: 'Access' },
-    { label: 'Login from new device', time: 'Apr 6, 11:30 AM', type: 'warning', tag: 'Security' },
-    { label: 'Password changed', time: 'Apr 5, 02:17 PM', type: 'info', tag: 'Security' },
-  ],
-}
-
-// ─── App States ───────────────────────────────────────────────────────────────
 const VIEW = { DASHBOARD: 'dashboard', CAMERA: 'camera', PREVIEW: 'preview' }
 
+function normalizeUserSummary(user) {
+  return {
+    id: user.id,
+    name: user.name,
+    role: user.role || 'No role set',
+    department: user.department || 'No department set',
+    employeeId: user.employee_id,
+    status: user.status || 'pending',
+  }
+}
+
+function normalizeSelectedUser(user) {
+  if (!user) {
+    return null
+  }
+
+  const enrolledAt = user.enrolled_at
+    ? new Date(user.enrolled_at).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : null
+
+  return {
+    id: user.id,
+    name: user.name,
+    role: user.role || 'No role set',
+    department: user.department || 'No department set',
+    employeeId: user.employee_id,
+    joined: user.joined || 'Not set',
+    accessLevel: user.access_level || 'Not set',
+    status: user.status || 'pending',
+    faceId: user.recognition_id,
+    facePhoto: user.face_photo,
+    enrolledAt,
+    activity: Array.isArray(user.activity) ? user.activity : [],
+    deviceSyncs: Array.isArray(user.device_syncs)
+      ? user.device_syncs.map((sync) => ({
+          deviceId: sync.device_id,
+          deviceName: sync.device_name,
+          deviceKey: sync.device_key,
+          isOnline: Boolean(sync.is_online),
+          syncStatus: sync.sync_status,
+          faceStatus: sync.face_status,
+          lastSyncedAt: sync.last_synced_at,
+          lastFaceSyncedAt: sync.last_face_synced_at,
+          lastErrorMessage: sync.last_error_message,
+        }))
+      : [],
+  }
+}
+
+function normalizeDevice(device) {
+  return {
+    id: device.id,
+    name: device.name,
+    deviceKey: device.device_key,
+    isOnline: Boolean(device.is_online),
+    personCount: device.person_count,
+    faceCount: device.face_count,
+  }
+}
+
 export default function App() {
-  const [user, setUser]         = useState(INITIAL_USER)
-  const [view, setView]         = useState(VIEW.DASHBOARD)
+  const [users, setUsers] = useState([])
+  const [user, setUser] = useState(null)
+  const [activeDevices, setActiveDevices] = useState([])
+  const [view, setView] = useState(VIEW.DASHBOARD)
   const [capturedPhoto, setCapturedPhoto] = useState(null)
-  const [saving, setSaving]     = useState(false)
-  const [toast, setToast]       = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [toast, setToast] = useState(null)
 
   const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type })
-    setTimeout(() => setToast(null), 3500)
+    window.setTimeout(() => setToast(null), 3500)
   }, [])
 
-  // Camera captured a frame
+  const loadDashboard = useCallback(async (managedUserId, options = {}) => {
+    const { silent = false } = options
+
+    if (silent) {
+      setRefreshing(true)
+    } else {
+      setLoading(true)
+    }
+
+    try {
+      const data = await fetchAppDashboard(managedUserId)
+
+      setUsers(Array.isArray(data.users) ? data.users.map(normalizeUserSummary) : [])
+      setActiveDevices(Array.isArray(data.active_devices) ? data.active_devices.map(normalizeDevice) : [])
+      setUser(normalizeSelectedUser(data.selected_user))
+    } catch (error) {
+      console.error(error)
+      showToast(error.message || 'Failed to load FaceApp data.', 'error')
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }, [showToast])
+
+  useEffect(() => {
+    loadDashboard()
+  }, [loadDashboard])
+
+  const handleSelectUser = useCallback((nextUserId) => {
+    if (!nextUserId) {
+      setUser(null)
+      return
+    }
+
+    loadDashboard(nextUserId, { silent: true })
+  }, [loadDashboard])
+
+  const handleOpenCamera = useCallback(() => {
+    if (!user) {
+      showToast('Create a managed user in the admin panel first.', 'error')
+      return
+    }
+
+    if (activeDevices.length === 0) {
+      showToast('Add at least one active device in admin before enrolling a face.', 'error')
+      return
+    }
+
+    setView(VIEW.CAMERA)
+  }, [activeDevices.length, showToast, user])
+
   const handleCapture = useCallback((dataUrl) => {
     setCapturedPhoto(dataUrl)
     setView(VIEW.PREVIEW)
   }, [])
 
-  // Save / enroll the face
   const handleSave = useCallback(async () => {
-    if (!capturedPhoto) return
+    if (!capturedPhoto || !user) {
+      return
+    }
 
     setSaving(true)
 
     try {
       const result = await enrollFace({
-        employee_id: user.employeeId,
-        name: user.name,
+        managed_user_id: user.id,
         photo_data_url: capturedPhoto,
       })
 
-      const enrolledAt = result.enrollment.enrolled_at
-        ? new Date(result.enrollment.enrolled_at)
-        : new Date()
+      await loadDashboard(user.id, { silent: true })
 
-      const formattedDate = enrolledAt.toLocaleDateString('en-US', {
-        month: 'short', day: 'numeric', year: 'numeric',
-      })
+      const verifiedDevices = Array.isArray(result.enrollment.sync_results)
+        ? result.enrollment.sync_results.filter((sync) => sync.status === 'verified').length
+        : 0
 
-      setUser(prev => ({
-        ...prev,
-        faceId: result.enrollment.public_id,
-        facePhoto: capturedPhoto,
-        enrolledAt: formattedDate,
-        status: 'active',
-        activity: [
-          {
-            label: 'Face enrolled successfully',
-            time: `Today, ${enrolledAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`,
-            type: 'success',
-            tag: 'FaceID',
-          },
-          ...prev.activity,
-        ],
-      }))
-
+      showToast(`Face enrolled on ${verifiedDevices} device${verifiedDevices === 1 ? '' : 's'}.`)
       setCapturedPhoto(null)
       setView(VIEW.DASHBOARD)
-      showToast('Face enrolled successfully!')
     } catch (error) {
       console.error(error)
       showToast(error.message || 'Face enrollment failed.', 'error')
     } finally {
       setSaving(false)
     }
-  }, [capturedPhoto, showToast, user.employeeId, user.name])
+  }, [capturedPhoto, loadDashboard, showToast, user])
 
   const handleRetake = useCallback(() => {
     setCapturedPhoto(null)
@@ -109,7 +187,12 @@ export default function App() {
     <div className="app-root">
       <Dashboard
         user={user}
-        onOpenCamera={() => setView(VIEW.CAMERA)}
+        users={users}
+        activeDevices={activeDevices}
+        loading={loading}
+        refreshing={refreshing}
+        onSelectUser={handleSelectUser}
+        onOpenCamera={handleOpenCamera}
       />
 
       {view === VIEW.CAMERA && (
@@ -128,7 +211,6 @@ export default function App() {
         />
       )}
 
-      {/* Toast */}
       {toast && (
         <div className={`toast toast-${toast.type} animate-fadeUp`}>
           <div className="toast-icon">

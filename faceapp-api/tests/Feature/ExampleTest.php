@@ -7,10 +7,10 @@ use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
-    public function test_the_root_path_redirects_to_the_device_monitor(): void
+    public function test_the_root_path_redirects_to_the_admin_dashboard(): void
     {
         $response = $this->get('/');
 
-        $response->assertRedirect('/devices');
+        $response->assertRedirect('/admin');
     }
 }

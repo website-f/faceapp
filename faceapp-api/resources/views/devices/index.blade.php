@@ -258,12 +258,36 @@
             <div class="flash bad">{{ session('error') }}</div>
         @endif
 
+        @if ($managedDevices->isNotEmpty())
+            <div class="panel" style="padding: 18px 22px; margin-bottom: 20px;">
+                <div class="tiny" style="margin-bottom: 10px;">Managed device live check</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    @foreach ($managedDevices as $managedDevice)
+                        <a
+                            href="{{ route('devices.monitor.index', ['device_id' => $managedDevice->id]) }}"
+                            class="pill {{ $selectedDevice?->is($managedDevice) ? 'good' : 'warn' }}"
+                            style="text-decoration: none;"
+                        >
+                            {{ $managedDevice->display_name }}
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         <div class="grid">
             <section class="panel span-6">
                 <h2>Gateway Live Check</h2>
                 <dl class="kv">
-                    <dt>Configured device key</dt>
-                    <dd><code>{{ $configuredDeviceKey ?: 'Not set' }}</code></dd>
+                    <dt>Selected device</dt>
+                    <dd>
+                        @if ($selectedDevice)
+                            <strong>{{ $selectedDevice->display_name }}</strong>
+                            <div class="tiny"><code>{{ $selectedDevice->device_key }}</code></div>
+                        @else
+                            <code>{{ $configuredDeviceKey ?: 'Not set' }}</code>
+                        @endif
+                    </dd>
                     <dt>Heartbeat interval</dt>
                     <dd>{{ $heartbeatIntervalSeconds }} seconds</dd>
                     <dt>Online window</dt>
@@ -284,6 +308,9 @@
                 <div class="actions">
                     <form method="post" action="{{ route('devices.monitor.configure') }}">
                         @csrf
+                        @if ($selectedDevice)
+                            <input type="hidden" name="device_id" value="{{ $selectedDevice->id }}">
+                        @endif
                         <button type="submit">Push Callback URLs To Device</button>
                     </form>
                 </div>

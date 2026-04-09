@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Device;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -19,6 +20,18 @@ class EnrollmentApiTest extends TestCase
         config()->set('gateway.secret', 'secret123');
         config()->set('gateway.base_url', 'http://gateway.local/api');
         config()->set('gateway.upload.public_base_url', 'http://127.0.0.1:8000/storage');
+
+        Device::query()->create([
+            'device_key' => 'DEVICE1234567890',
+            'secret' => 'secret123',
+            'name' => 'Main Gate',
+            'is_managed' => true,
+            'is_active' => true,
+            'person_type_default' => 1,
+            'verify_style_default' => 1,
+            'ac_group_number_default' => 0,
+            'photo_quality_default' => 1,
+        ]);
 
         Http::fake([
             'http://gateway.local/api/person/find' => Http::sequence()
@@ -66,7 +79,8 @@ class EnrollmentApiTest extends TestCase
         $response
             ->assertCreated()
             ->assertJsonPath('ok', true)
-            ->assertJsonPath('enrollment.status', 'verified');
+            ->assertJsonPath('enrollment.status', 'verified')
+            ->assertJsonCount(1, 'enrollment.sync_results');
 
         Http::assertSentCount(5);
     }

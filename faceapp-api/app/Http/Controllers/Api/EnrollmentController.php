@@ -42,6 +42,7 @@ class EnrollmentController extends Controller
     {
         return [
             'public_id' => $enrollment->public_id,
+            'managed_user_id' => $enrollment->managed_user_id,
             'employee_id' => $enrollment->employee_id,
             'name' => $enrollment->name,
             'status' => $enrollment->status,
@@ -49,6 +50,7 @@ class EnrollmentController extends Controller
             'photo_public_url' => $enrollment->photo_public_url,
             'gateway_person_status' => $enrollment->gateway_person_status,
             'gateway_face_status' => $enrollment->gateway_face_status,
+            'sync_results' => $enrollment->sync_results,
             'error_message' => $enrollment->error_message,
             'enrolled_at' => $enrollment->enrolled_at?->toIso8601String(),
             'created_at' => $enrollment->created_at?->toIso8601String(),

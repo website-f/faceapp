@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Device;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
@@ -9,14 +10,53 @@ use RuntimeException;
 
 class GatewaySdkClient
 {
+    protected ?Device $deviceContext = null;
+
+    public function __construct(
+        protected readonly SystemSettingsService $settings,
+    ) {}
+
+    public function forDevice(Device $device): self
+    {
+        $clone = clone $this;
+        $clone->deviceContext = $device;
+
+        return $clone;
+    }
+
     public function deviceStatus(): array
     {
         return $this->post('/device/get');
     }
 
+    public function reboot(): array
+    {
+        return $this->post('/device/reboot');
+    }
+
+    public function reset(int $type): array
+    {
+        return $this->post('/device/reset', [
+            'type' => $type,
+        ]);
+    }
+
+    public function output(int $type = 1, ?string $content = null): array
+    {
+        return $this->post('/device/output', [
+            'type' => $type,
+            'content' => $content,
+        ]);
+    }
+
     public function setServerConfig(array $config): array
     {
         return $this->post('/device/setSevConfig', $config);
+    }
+
+    public function setConfig(array $config): array
+    {
+        return $this->post('/device/setConfig', $config);
     }
 
     public function findPerson(string $employeeId): array
@@ -62,6 +102,13 @@ class GatewaySdkClient
         return $this->post('/face/find', [
             'personSn' => $employeeId,
         ], requireBusinessSuccess: false);
+    }
+
+    public function deletePerson(string $employeeId): array
+    {
+        return $this->post('/person/delete', [
+            'sn' => $employeeId,
+        ]);
     }
 
     public function personExists(?array $response): bool
@@ -133,7 +180,7 @@ class GatewaySdkClient
 
     protected function http(): PendingRequest
     {
-        $baseUrl = config('gateway.base_url');
+        $baseUrl = $this->settings->gatewayBaseUrl();
 
         if (! is_string($baseUrl) || $baseUrl === '') {
             throw new RuntimeException('GATEWAY_BASE_URL is not configured.');
@@ -144,13 +191,13 @@ class GatewaySdkClient
 
     protected function endpoint(string $path): string
     {
-        return rtrim((string) config('gateway.base_url'), '/').'/'.ltrim($path, '/');
+        return rtrim($this->settings->gatewayBaseUrl(), '/').'/'.ltrim($path, '/');
     }
 
     protected function withDeviceCredentials(array $payload): array
     {
-        $deviceKey = config('gateway.device_key');
-        $secret = config('gateway.secret');
+        $deviceKey = $this->deviceContext?->device_key ?: config('gateway.device_key');
+        $secret = $this->deviceContext?->secret ?: config('gateway.secret');
 
         if (! is_string($deviceKey) || $deviceKey === '') {
             throw new RuntimeException('GATEWAY_DEVICE_KEY is not configured.');

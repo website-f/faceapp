@@ -1,4 +1,4 @@
-/* ─── Layout ─── */
+/* Layout */
 .dashboard {
   min-height: 100vh;
   min-height: 100dvh;
@@ -7,7 +7,7 @@
   overflow-x: hidden;
 }
 
-/* ─── Decorative blobs ─── */
+/* Decorative blobs */
 .db-blob {
   position: fixed;
   border-radius: 50%;
@@ -21,7 +21,7 @@
   height: 400px;
   top: -100px;
   right: -100px;
-  background: radial-gradient(circle, rgba(99,102,241,0.18), transparent 70%);
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.18), transparent 70%);
 }
 
 .db-blob-2 {
@@ -29,10 +29,10 @@
   height: 300px;
   bottom: 10%;
   left: -80px;
-  background: radial-gradient(circle, rgba(139,92,246,0.12), transparent 70%);
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.12), transparent 70%);
 }
 
-/* ─── Header ─── */
+/* Header */
 .db-header {
   position: sticky;
   top: 0;
@@ -67,7 +67,7 @@
   box-shadow: 0 4px 12px var(--accent-glow);
 }
 
-/* ─── Status Badge ─── */
+/* Status badge */
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -88,8 +88,9 @@
 .status-green {
   background: var(--accent-green-soft);
   color: var(--accent-green);
-  border: 1px solid rgba(16,185,129,0.25);
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }
+
 .status-green .status-dot {
   background: var(--accent-green);
   box-shadow: 0 0 6px var(--accent-green);
@@ -97,20 +98,26 @@
 }
 
 .status-amber {
-  background: rgba(245,158,11,0.12);
+  background: rgba(245, 158, 11, 0.12);
   color: var(--accent-amber);
-  border: 1px solid rgba(245,158,11,0.25);
+  border: 1px solid rgba(245, 158, 11, 0.25);
 }
-.status-amber .status-dot { background: var(--accent-amber); }
+
+.status-amber .status-dot {
+  background: var(--accent-amber);
+}
 
 .status-red {
-  background: rgba(239,68,68,0.12);
+  background: rgba(239, 68, 68, 0.12);
   color: var(--accent-red);
-  border: 1px solid rgba(239,68,68,0.2);
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
-.status-red .status-dot { background: var(--accent-red); }
 
-/* ─── Main ─── */
+.status-red .status-dot {
+  background: var(--accent-red);
+}
+
+/* Main */
 .db-main {
   position: relative;
   z-index: 1;
@@ -122,7 +129,81 @@
   gap: 16px;
 }
 
-/* ─── Profile Hero ─── */
+/* Selector */
+.selector-card {
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  border: 1px solid var(--border);
+  display: grid;
+  gap: 14px;
+}
+
+.selector-copy h2 {
+  margin: 2px 0 6px;
+  font-family: var(--font-heading);
+  font-size: 22px;
+  color: var(--text-primary);
+}
+
+.selector-copy p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.selector-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.selector-field {
+  display: grid;
+  gap: 8px;
+}
+
+.selector-field span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.selector-field select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: rgba(17, 24, 39, 0.22);
+  color: var(--text-primary);
+  padding: 12px 14px;
+  font: inherit;
+}
+
+.selector-field select:disabled {
+  opacity: 0.6;
+}
+
+.empty-state {
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  padding: 20px;
+}
+
+.empty-state h3 {
+  margin: 0 0 8px;
+  font-family: var(--font-heading);
+  color: var(--text-primary);
+}
+
+.empty-state p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* Profile hero */
 .profile-hero {
   display: flex;
   align-items: center;
@@ -150,7 +231,7 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.25));
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.25));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -167,7 +248,7 @@
   position: absolute;
   inset: -3px;
   border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.1);
+  border: 2px solid rgba(255, 255, 255, 0.1);
   transition: border-color 0.4s ease;
 }
 
@@ -213,7 +294,7 @@
   color: var(--text-muted);
 }
 
-/* ─── Stats Row ─── */
+/* Stats */
 .stats-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -244,7 +325,7 @@
   color: var(--text-primary);
 }
 
-/* ─── Face Card ─── */
+/* Face card */
 .face-card {
   border-radius: var(--radius-xl);
   padding: 20px;
@@ -294,12 +375,11 @@
   font-weight: 600;
   color: var(--accent-green);
   background: var(--accent-green-soft);
-  border: 1px solid rgba(16,185,129,0.2);
+  border: 1px solid rgba(16, 185, 129, 0.2);
   border-radius: var(--radius-full);
   padding: 4px 10px;
 }
 
-/* ─── Face ID Display ─── */
 .face-id-display {
   display: flex;
   flex-direction: column;
@@ -331,7 +411,7 @@
   margin-top: 4px;
 }
 
-/* ─── Empty state ─── */
+/* Empty face state */
 .face-id-empty {
   display: flex;
   flex-direction: column;
@@ -345,8 +425,8 @@
   width: 64px;
   height: 64px;
   border-radius: var(--radius-lg);
-  background: rgba(99,102,241,0.08);
-  border: 1px dashed rgba(99,102,241,0.3);
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px dashed rgba(99, 102, 241, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -368,7 +448,110 @@
   max-width: 260px;
 }
 
-/* ─── Enroll Button ─── */
+/* Device sync */
+.device-sync-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.device-sync-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.device-sync-header h3 {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.device-sync-header span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.device-sync-list {
+  display: grid;
+  gap: 10px;
+}
+
+.device-sync-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(15, 23, 42, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.device-sync-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.device-sync-meta {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.device-sync-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.device-sync-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.mini-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.mini-pill-green {
+  background: var(--accent-green-soft);
+  color: var(--accent-green);
+}
+
+.mini-pill-amber {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--accent-amber);
+}
+
+.mini-pill-blue {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.mini-pill-red {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--accent-red);
+}
+
+/* Enroll button */
 .enroll-btn {
   width: 100%;
   padding: 14px;
@@ -385,22 +568,29 @@
   justify-content: center;
   gap: 8px;
   transition: opacity var(--transition), transform var(--transition), box-shadow var(--transition);
-  box-shadow: 0 6px 24px rgba(99,102,241,0.35);
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.35);
   letter-spacing: 0.2px;
 }
 
 .enroll-btn:hover {
   opacity: 0.92;
   transform: translateY(-1px);
-  box-shadow: 0 10px 32px rgba(99,102,241,0.45);
+  box-shadow: 0 10px 32px rgba(99, 102, 241, 0.45);
+}
+
+.enroll-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+  box-shadow: none;
 }
 
 .enroll-btn:active {
   transform: scale(0.98);
-  box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
 }
 
-/* ─── Activity ─── */
+/* Activity */
 .section-title {
   font-size: 13px;
   text-transform: uppercase;
@@ -422,12 +612,17 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   transition: background var(--transition);
 }
 
-.activity-item:last-child { border-bottom: none; }
-.activity-item:hover { background: var(--bg-card-hover); }
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-item:hover {
+  background: var(--bg-card-hover);
+}
 
 .activity-dot {
   width: 8px;
@@ -436,11 +631,25 @@
   flex-shrink: 0;
 }
 
-.activity-dot-success { background: var(--accent-green); }
-.activity-dot-info    { background: var(--accent); }
-.activity-dot-warning { background: var(--accent-amber); }
+.activity-dot-success {
+  background: var(--accent-green);
+}
 
-.activity-content { flex: 1 }
+.activity-dot-info {
+  background: var(--accent);
+}
+
+.activity-dot-warning {
+  background: var(--accent-amber);
+}
+
+.activity-dot-error {
+  background: var(--accent-red);
+}
+
+.activity-content {
+  flex: 1;
+}
 
 .activity-label {
   font-size: 13px;
@@ -464,6 +673,50 @@
   flex-shrink: 0;
 }
 
-.tag-success { background: var(--accent-green-soft); color: var(--accent-green); }
-.tag-info    { background: var(--accent-soft); color: var(--accent); }
-.tag-warning { background: rgba(245,158,11,0.12); color: var(--accent-amber); }
+.tag-success {
+  background: var(--accent-green-soft);
+  color: var(--accent-green);
+}
+
+.tag-info {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.tag-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--accent-amber);
+}
+
+.tag-error {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--accent-red);
+}
+
+.activity-empty {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: 18px;
+}
+
+.activity-empty p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (max-width: 420px) {
+  .profile-hero {
+    align-items: flex-start;
+  }
+
+  .device-sync-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .device-sync-badges {
+    justify-content: flex-start;
+  }
+}
