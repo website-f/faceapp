@@ -20,6 +20,7 @@ class FaceEnrollmentService
 
         $employeeId = trim((string) $payload['employee_id']);
         $name = trim((string) $payload['name']);
+        $verificationResponse = null;
 
         $enrollment = Enrollment::create([
             'employee_id' => $employeeId,
@@ -67,7 +68,7 @@ class FaceEnrollmentService
                 'gateway_face_response' => $faceResponse,
             ])->save();
 
-            $verificationResponse = $this->gateway->findFace($employeeId);
+            $verificationResponse = $this->verifyFaceUpload($employeeId);
 
             if (! $this->gateway->faceExists($verificationResponse)) {
                 throw new RuntimeException('Gateway did not confirm the uploaded face.');
@@ -83,10 +84,16 @@ class FaceEnrollmentService
 
             return $enrollment->fresh();
         } catch (Throwable $exception) {
-            $enrollment->forceFill([
+            $updates = [
                 'status' => 'failed',
                 'error_message' => $exception->getMessage(),
-            ])->save();
+            ];
+
+            if (is_array($verificationResponse)) {
+                $updates['verification_response'] = $verificationResponse;
+            }
+
+            $enrollment->forceFill($updates)->save();
 
             report($exception);
 
@@ -136,5 +143,26 @@ class FaceEnrollmentService
         }
 
         return Storage::disk((string) config('gateway.upload.disk', 'public'))->url($path);
+    }
+
+    protected function verifyFaceUpload(string $employeeId): array
+    {
+        $attempts = max(1, (int) config('gateway.verification.retries', 5));
+        $delayMilliseconds = max(0, (int) config('gateway.verification.delay_milliseconds', 1500));
+        $lastResponse = [];
+
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            $lastResponse = $this->gateway->findFace($employeeId);
+
+            if ($this->gateway->faceExists($lastResponse)) {
+                return $lastResponse;
+            }
+
+            if ($attempt < $attempts && $delayMilliseconds > 0) {
+                usleep($delayMilliseconds * 1000);
+            }
+        }
+
+        return $lastResponse;
     }
 }

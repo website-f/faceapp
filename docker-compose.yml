@@ -53,7 +53,7 @@ services:
       GATEWAY_UPLOAD_DISK: public
       GATEWAY_UPLOAD_DIR: face-uploads
       FACE_PUBLIC_BASE_URL: ${FACEAPP_API_ORIGIN}/storage
-      GATEWAY_IMAGE_BASE_URL: http://api/storage
+      GATEWAY_IMAGE_BASE_URL: ${GATEWAY_IMAGE_BASE_URL}
     volumes:
       - api_storage:/var/www/html/storage
     depends_on:
