@@ -10,7 +10,7 @@ const INITIAL_USER = {
   name: 'Alexandra Chen',
   role: 'Senior Engineer',
   department: 'Platform Infrastructure',
-  employeeId: 'EMP-4829',
+  employeeId: 'EMP4829',
   joined: 'Mar 2022',
   accessLevel: 'Level 3',
   status: 'active',

@@ -14,7 +14,7 @@ class StoreEnrollmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_id' => ['required', 'string', 'max:50'],
+            'employee_id' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z0-9]+$/'],
             'name' => ['required', 'string', 'max:255'],
             'person_type' => ['nullable', 'integer', 'in:1,2,3'],
             'verify_style' => ['nullable', 'integer'],
@@ -38,5 +38,13 @@ class StoreEnrollmentRequest extends FormRequest
             'employee_id' => trim((string) $this->input('employee_id')),
             'name' => trim((string) $this->input('name')),
         ]);
+    }
+
+    public function messages(): array
+    {
+        return [
+            'employee_id.regex' => 'The employee_id may only contain English letters and numbers. Do not use spaces, hyphens, or symbols.',
+            'employee_id.max' => 'The employee_id may not be greater than 255 characters.',
+        ];
     }
 }

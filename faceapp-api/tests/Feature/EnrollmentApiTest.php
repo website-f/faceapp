@@ -31,7 +31,7 @@ class EnrollmentApiTest extends TestCase
                     'code' => '200',
                     'msg' => 'ok',
                     'data' => [
-                        'sn' => 'EMP-4829',
+                        'sn' => 'EMP4829',
                         'name' => 'Alexandra Chen',
                     ],
                 ]),
@@ -51,14 +51,14 @@ class EnrollmentApiTest extends TestCase
                 'code' => '200',
                 'msg' => 'ok',
                 'data' => [
-                    'personSn' => 'EMP-4829',
+                    'personSn' => 'EMP4829',
                     'imgBase64' => base64_encode('verified'),
                 ],
             ]),
         ]);
 
         $response = $this->postJson('/api/enrollments', [
-            'employee_id' => 'EMP-4829',
+            'employee_id' => 'EMP4829',
             'name' => 'Alexandra Chen',
             'photo_data_url' => 'data:image/jpeg;base64,'.base64_encode('fake-image'),
         ]);
