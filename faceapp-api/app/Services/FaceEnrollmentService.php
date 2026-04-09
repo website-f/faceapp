@@ -20,6 +20,7 @@ class FaceEnrollmentService
 
         $employeeId = trim((string) $payload['employee_id']);
         $name = trim((string) $payload['name']);
+        $personVerificationResponse = null;
         $verificationResponse = null;
 
         $enrollment = Enrollment::create([
@@ -48,11 +49,19 @@ class FaceEnrollmentService
             ];
 
             $personResponse = $this->gateway->upsertPerson($personPayload);
+            $personVerificationResponse = $this->verifyPersonSync($employeeId);
+
+            if (! $this->gateway->personExists($personVerificationResponse)) {
+                throw new RuntimeException('Gateway did not confirm the person record before face upload.');
+            }
 
             $enrollment->forceFill([
                 'status' => 'person_synced',
                 'gateway_person_status' => 'synced',
-                'gateway_person_response' => $personResponse,
+                'gateway_person_response' => [
+                    'merge_response' => $personResponse,
+                    'verification_response' => $personVerificationResponse,
+                ],
             ])->save();
 
             $faceResponse = $this->gateway->mergeFace(
@@ -91,6 +100,12 @@ class FaceEnrollmentService
 
             if (is_array($verificationResponse)) {
                 $updates['verification_response'] = $verificationResponse;
+            }
+
+            if (is_array($personVerificationResponse) && empty($updates['gateway_person_response'])) {
+                $updates['gateway_person_response'] = [
+                    'verification_response' => $personVerificationResponse,
+                ];
             }
 
             $enrollment->forceFill($updates)->save();
@@ -155,6 +170,27 @@ class FaceEnrollmentService
             $lastResponse = $this->gateway->findFace($employeeId);
 
             if ($this->gateway->faceExists($lastResponse)) {
+                return $lastResponse;
+            }
+
+            if ($attempt < $attempts && $delayMilliseconds > 0) {
+                usleep($delayMilliseconds * 1000);
+            }
+        }
+
+        return $lastResponse;
+    }
+
+    protected function verifyPersonSync(string $employeeId): array
+    {
+        $attempts = max(1, (int) config('gateway.verification.person_retries', 5));
+        $delayMilliseconds = max(0, (int) config('gateway.verification.person_delay_milliseconds', 1000));
+        $lastResponse = [];
+
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            $lastResponse = $this->gateway->findPerson($employeeId);
+
+            if ($this->gateway->personExists($lastResponse)) {
                 return $lastResponse;
             }
 

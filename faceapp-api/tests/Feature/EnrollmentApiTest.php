@@ -21,19 +21,30 @@ class EnrollmentApiTest extends TestCase
         config()->set('gateway.upload.public_base_url', 'http://127.0.0.1:8000/storage');
 
         Http::fake([
-            'http://gateway.local/api/person/find' => Http::response([
-                'code' => '200',
-                'msg' => 'ok',
-                'data' => null,
-            ]),
-            'http://gateway.local/api/person/create' => Http::response([
-                'code' => '200',
-                'msg' => 'ok',
+            'http://gateway.local/api/person/find' => Http::sequence()
+                ->push([
+                    'code' => '200',
+                    'msg' => 'ok',
+                    'data' => null,
+                ])
+                ->push([
+                    'code' => '200',
+                    'msg' => 'ok',
+                    'data' => [
+                        'sn' => 'EMP-4829',
+                        'name' => 'Alexandra Chen',
+                    ],
+                ]),
+            'http://gateway.local/api/person/merge' => Http::response([
+                'code' => '000',
+                'msg' => 'Request is successful',
+                'success' => true,
                 'data' => true,
             ]),
             'http://gateway.local/api/face/merge' => Http::response([
-                'code' => '200',
-                'msg' => 'ok',
+                'code' => '000',
+                'msg' => 'Request is successful',
+                'success' => true,
                 'data' => true,
             ]),
             'http://gateway.local/api/face/find' => Http::response([
@@ -57,6 +68,6 @@ class EnrollmentApiTest extends TestCase
             ->assertJsonPath('ok', true)
             ->assertJsonPath('enrollment.status', 'verified');
 
-        Http::assertSentCount(4);
+        Http::assertSentCount(5);
     }
 }

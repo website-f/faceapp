@@ -24,7 +24,7 @@ class GatewaySdkClient
         return $this->post('/person/find', [
             'type' => 1,
             'key' => $employeeId,
-        ]);
+        ], requireBusinessSuccess: false);
     }
 
     public function createPerson(array $person): array
@@ -37,15 +37,14 @@ class GatewaySdkClient
         return $this->post('/person/update', $this->personPayload($person));
     }
 
+    public function mergePerson(array $person): array
+    {
+        return $this->post('/person/merge', $this->personPayload($person));
+    }
+
     public function upsertPerson(array $person): array
     {
-        $existing = $this->findPerson($person['employee_id']);
-
-        if ($this->personExists($existing)) {
-            return $this->updatePerson($person);
-        }
-
-        return $this->createPerson($person);
+        return $this->mergePerson($person);
     }
 
     public function mergeFace(string $employeeId, string $imageUrl, string $imageBase64, int $photoQuality = 1): array
@@ -62,7 +61,7 @@ class GatewaySdkClient
     {
         return $this->post('/face/find', [
             'personSn' => $employeeId,
-        ]);
+        ], requireBusinessSuccess: false);
     }
 
     public function personExists(?array $response): bool
@@ -101,7 +100,7 @@ class GatewaySdkClient
         ];
     }
 
-    protected function post(string $path, array $payload = []): array
+    protected function post(string $path, array $payload = [], bool $requireBusinessSuccess = true): array
     {
         try {
             $response = $this->http()
@@ -117,9 +116,19 @@ class GatewaySdkClient
 
         $decoded = $response->json();
 
-        return is_array($decoded)
-            ? $decoded
-            : ['raw' => $response->body()];
+        if (! is_array($decoded)) {
+            return ['raw' => $response->body()];
+        }
+
+        if ($requireBusinessSuccess && ! $this->responseIndicatesSuccess($decoded)) {
+            $message = (string) ($decoded['msg'] ?? 'Gateway business request failed.');
+            $code = (string) ($decoded['code'] ?? '');
+            $suffix = $code !== '' ? " [code: {$code}]" : '';
+
+            throw new RuntimeException('Gateway request failed: '.$message.$suffix);
+        }
+
+        return $decoded;
     }
 
     protected function http(): PendingRequest
@@ -156,5 +165,16 @@ class GatewaySdkClient
             'secret' => $secret,
             ...$payload,
         ], fn (mixed $value): bool => $value !== null && $value !== '');
+    }
+
+    protected function responseIndicatesSuccess(array $response): bool
+    {
+        if (array_key_exists('success', $response)) {
+            return $response['success'] === true || $response['success'] === 'true' || $response['success'] === 1 || $response['success'] === '1';
+        }
+
+        $code = (string) ($response['code'] ?? '');
+
+        return in_array($code, ['000', '0', '200'], true);
     }
 }

@@ -443,6 +443,7 @@
                                                 <summary class="tiny" style="cursor: pointer;">Raw gateway response</summary>
                                                 <div style="margin-top: 8px;">
                                                     <pre>{{ json_encode([
+                                                        'gateway_person_response' => $enrollment->gateway_person_response,
                                                         'gateway_face_response' => $enrollment->gateway_face_response,
                                                         'verification_response' => $enrollment->verification_response,
                                                     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>

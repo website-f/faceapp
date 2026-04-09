@@ -21,11 +21,14 @@ return [
     ],
 
     'monitoring' => [
+        'callback_base_url' => rtrim((string) env('GATEWAY_CALLBACK_BASE_URL', ''), '/'),
         'heartbeat_interval_seconds' => (int) env('GATEWAY_HEARTBEAT_INTERVAL_SECONDS', 60),
         'online_window_seconds' => (int) env('GATEWAY_ONLINE_WINDOW_SECONDS', 180),
     ],
 
     'verification' => [
+        'person_retries' => (int) env('GATEWAY_PERSON_VERIFY_RETRIES', 5),
+        'person_delay_milliseconds' => (int) env('GATEWAY_PERSON_VERIFY_DELAY_MS', 1000),
         'retries' => (int) env('GATEWAY_VERIFY_RETRIES', 5),
         'delay_milliseconds' => (int) env('GATEWAY_VERIFY_DELAY_MS', 1500),
     ],

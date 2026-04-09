@@ -91,11 +91,12 @@ class DeviceMonitoringTest extends TestCase
         config()->set('gateway.device_key', 'DEVICE1234567890');
         config()->set('gateway.secret', 'secret123');
         config()->set('gateway.base_url', 'http://gateway.local/api');
+        config()->set('gateway.monitoring.callback_base_url', 'http://api.example.com');
         config()->set('gateway.monitoring.heartbeat_interval_seconds', 75);
 
-        $expectedRecordUrl = route('api.devices.callbacks.record');
-        $expectedHeartbeatUrl = route('api.devices.callbacks.heartbeat');
-        $expectedPersonRegistrationUrl = route('api.devices.callbacks.person-registration');
+        $expectedRecordUrl = 'http://api.example.com/api/device/callbacks/records';
+        $expectedHeartbeatUrl = 'http://api.example.com/api/device/callbacks/heartbeat';
+        $expectedPersonRegistrationUrl = 'http://api.example.com/api/device/callbacks/person-registrations';
 
         Http::fake([
             'http://gateway.local/api/device/setSevConfig' => Http::response([

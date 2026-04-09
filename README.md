@@ -44,6 +44,7 @@ cp .env.example .env
 - `FACEAPP_API_DOMAIN`
 - `FACEAPP_API_ORIGIN`
 - `GATEWAY_IMAGE_BASE_URL`
+- `GATEWAY_CALLBACK_BASE_URL`
 - `LARAVEL_APP_KEY`
 - `GATEWAY_DEVICE_KEY`
 - `GATEWAY_SECRET`
@@ -91,12 +92,13 @@ From this page you can:
 The legacy gateway expects a plain HTTP image URL for `face/merge`, so the stack uses a public plain HTTP image URL for the gateway image fetch:
 
 - `GATEWAY_IMAGE_BASE_URL=http://faceapp-api.example.com/storage`
+- `GATEWAY_CALLBACK_BASE_URL=http://faceapp-api.example.com`
 
 At the same time, users access the API publicly over HTTPS:
 
 - `FACE_PUBLIC_BASE_URL=https://your-api-domain/storage`
 
-This split is intentional and required for the old gateway flow. The physical device should be able to reach `GATEWAY_IMAGE_BASE_URL` directly over plain HTTP.
+This split is intentional and required for the old gateway flow. The physical device should be able to reach both `GATEWAY_IMAGE_BASE_URL` and `GATEWAY_CALLBACK_BASE_URL` directly over plain HTTP.
 
 ## Main Commands
 

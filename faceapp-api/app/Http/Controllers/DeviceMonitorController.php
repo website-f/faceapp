@@ -16,6 +16,11 @@ class DeviceMonitorController extends Controller
     {
         $gatewayStatus = null;
         $gatewayError = null;
+        $callbackUrls = [
+            'record' => $this->callbackUrl('/api/device/callbacks/records'),
+            'heartbeat' => $this->callbackUrl('/api/device/callbacks/heartbeat'),
+            'person_registration' => $this->callbackUrl('/api/device/callbacks/person-registrations'),
+        ];
 
         try {
             $gatewayStatus = $gateway->deviceStatus();
@@ -40,11 +45,7 @@ class DeviceMonitorController extends Controller
                 ->latest()
                 ->limit(20)
                 ->get(),
-            'callbackUrls' => [
-                'record' => route('api.devices.callbacks.record'),
-                'heartbeat' => route('api.devices.callbacks.heartbeat'),
-                'person_registration' => route('api.devices.callbacks.person-registration'),
-            ],
+            'callbackUrls' => $callbackUrls,
             'heartbeatIntervalSeconds' => (int) config('gateway.monitoring.heartbeat_interval_seconds', 60),
             'onlineWindowSeconds' => (int) config('gateway.monitoring.online_window_seconds', 180),
         ]);
@@ -52,11 +53,17 @@ class DeviceMonitorController extends Controller
 
     public function configureCallbacks(GatewaySdkClient $gateway): RedirectResponse
     {
+        $callbackUrls = [
+            'record' => $this->callbackUrl('/api/device/callbacks/records'),
+            'heartbeat' => $this->callbackUrl('/api/device/callbacks/heartbeat'),
+            'person_registration' => $this->callbackUrl('/api/device/callbacks/person-registrations'),
+        ];
+
         try {
             $response = $gateway->setServerConfig([
-                'sevUploadRecRecordUrl' => route('api.devices.callbacks.record'),
-                'sevUploadDevHeartbeatUrl' => route('api.devices.callbacks.heartbeat'),
-                'sevUploadRegPersonUrl' => route('api.devices.callbacks.person-registration'),
+                'sevUploadRecRecordUrl' => $callbackUrls['record'],
+                'sevUploadDevHeartbeatUrl' => $callbackUrls['heartbeat'],
+                'sevUploadRegPersonUrl' => $callbackUrls['person_registration'],
                 'sevUploadDevHeartbeatInterval' => (int) config('gateway.monitoring.heartbeat_interval_seconds', 60),
             ]);
         } catch (Throwable $exception) {
@@ -69,5 +76,16 @@ class DeviceMonitorController extends Controller
             ->route('devices.monitor.index')
             ->with('status', 'Callback URLs pushed to the device through the gateway.')
             ->with('gateway_config_response', $response);
+    }
+
+    protected function callbackUrl(string $path): string
+    {
+        $baseUrl = (string) config('gateway.monitoring.callback_base_url', '');
+
+        if ($baseUrl !== '') {
+            return rtrim($baseUrl, '/').'/'.ltrim($path, '/');
+        }
+
+        return url($path);
     }
 }
