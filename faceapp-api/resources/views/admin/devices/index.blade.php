@@ -1,165 +1,264 @@
-@extends('admin.layout', ['title' => 'Manage Devices'])
+@extends('admin.layout', ['title' => 'Devices'])
 
 @section('content')
-    <section class="header">
-        <div>
+    <div class="page-header">
+        <div class="page-header-left">
             <h2>Devices</h2>
-            <p>Add devices for each client and branch, store the device key and secret here, and trigger operational actions like heartbeat callback setup, open door, and reboot.</p>
+            <p>Manage face terminals, configure callbacks, and trigger remote actions per device.</p>
         </div>
-    </section>
+        <div class="page-header-actions">
+            @if ($editingDevice)
+                <a href="{{ route('admin.devices.index') }}" class="btn btn-secondary btn-sm">
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+                    Add New Device
+                </a>
+            @else
+                <button class="btn btn-primary btn-sm" onclick="openModal('deviceModal')">
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+                    Add Device
+                </button>
+            @endif
+        </div>
+    </div>
 
-    <div class="grid cols-2">
-        <section class="card">
-            <h3>{{ $editingDevice ? 'Edit device' : 'Add device' }}</h3>
-            <form method="post" action="{{ $editingDevice ? route('admin.devices.update', $editingDevice) : route('admin.devices.store') }}" class="form-grid">
-                @csrf
-                @if ($editingDevice)
-                    @method('put')
-                @endif
-
-                <div class="field">
-                    <label for="device_key">Device Key</label>
-                    <input id="device_key" name="device_key" value="{{ old('device_key', $editingDevice?->device_key) }}" required>
+    <!-- Devices Table -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-header-left">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style="color:var(--muted)"><path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clip-rule="evenodd"/></svg>
+                <div>
+                    <div class="card-title">Managed Devices</div>
+                    <div class="card-subtitle">{{ $devices->count() }} device{{ $devices->count() !== 1 ? 's' : '' }} registered</div>
                 </div>
+            </div>
+        </div>
 
-                <div class="field">
-                    <label for="name">Display Name</label>
-                    <input id="name" name="name" value="{{ old('name', $editingDevice?->name) }}" placeholder="Main Lobby Gate">
-                </div>
-
-                <div class="field">
-                    <label for="client_name">Client</label>
-                    <input id="client_name" name="client_name" value="{{ old('client_name', $editingDevice?->client_name) }}" placeholder="Client or company name">
-                </div>
-
-                <div class="field">
-                    <label for="branch_name">Branch / Store</label>
-                    <input id="branch_name" name="branch_name" value="{{ old('branch_name', $editingDevice?->branch_name) }}" placeholder="Branch or location name">
-                </div>
-
-                <div class="field">
-                    <label for="secret">Device Secret</label>
-                    <input id="secret" name="secret" type="password" value="" placeholder="{{ $editingDevice ? 'Leave blank to keep current secret' : 'Required' }}">
-                </div>
-
-                <div class="field">
-                    <label for="display_order">Display Order</label>
-                    <input id="display_order" name="display_order" type="number" min="0" value="{{ old('display_order', $editingDevice?->display_order ?? 0) }}">
-                </div>
-
-                <div class="field">
-                    <label for="person_type_default">Default Person Type</label>
-                    <select id="person_type_default" name="person_type_default">
-                        @foreach ([1 => 'Employee', 2 => 'Guest', 3 => 'Blacklist'] as $value => $label)
-                            <option value="{{ $value }}" @selected(old('person_type_default', $editingDevice?->person_type_default ?? 1) == $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="verify_style_default">Default Verify Style</label>
-                    <input id="verify_style_default" name="verify_style_default" type="number" min="0" value="{{ old('verify_style_default', $editingDevice?->verify_style_default ?? 1) }}">
-                </div>
-
-                <div class="field">
-                    <label for="ac_group_number_default">Default Access Group</label>
-                    <input id="ac_group_number_default" name="ac_group_number_default" type="number" min="0" value="{{ old('ac_group_number_default', $editingDevice?->ac_group_number_default ?? 0) }}">
-                </div>
-
-                <div class="field">
-                    <label for="photo_quality_default">Photo Quality Check</label>
-                    <select id="photo_quality_default" name="photo_quality_default">
-                        <option value="1" @selected(old('photo_quality_default', $editingDevice?->photo_quality_default ?? 1) == 1)>Loose</option>
-                        <option value="0" @selected(old('photo_quality_default', $editingDevice?->photo_quality_default ?? 1) == 0)>Strict</option>
-                    </select>
-                </div>
-
-                <div class="field checkbox">
-                    <input id="is_active" name="is_active" type="checkbox" value="1" @checked(old('is_active', $editingDevice?->is_active ?? true))>
-                    <label for="is_active">Active for sync and face enrollment</label>
-                </div>
-
-                <div class="field full">
-                    <label for="notes">Notes</label>
-                    <textarea id="notes" name="notes" placeholder="Optional device notes or deployment details">{{ old('notes', $editingDevice?->notes) }}</textarea>
-                </div>
-
-                <div class="field full">
-                    <div class="actions">
-                        <button type="submit">{{ $editingDevice ? 'Save Device' : 'Add Device' }}</button>
-                        @if ($editingDevice)
-                            <a class="btn secondary" href="{{ route('admin.devices.index') }}">New Device</a>
-                            <form method="post" action="{{ route('admin.devices.destroy', $editingDevice) }}" onsubmit="return confirm('Remove this device from managed devices?')">
-                                @csrf
-                                @method('delete')
-                                <button type="submit" class="danger">Delete Device</button>
-                            </form>
-                        @endif
+        @if ($devices->isEmpty())
+            <div class="card-body">
+                <div class="empty-state">
+                    <div class="empty-icon">📡</div>
+                    <h4>No devices yet</h4>
+                    <p>Add your first face terminal to start managing access control.</p>
+                    <div style="margin-top: 18px;">
+                        <button class="btn btn-primary btn-sm" onclick="openModal('deviceModal')">Add Device</button>
                     </div>
                 </div>
-            </form>
-        </section>
-
-        <section class="card">
-            <h3>Managed Device List</h3>
-            @if ($devices->isEmpty())
-                <p class="subtle">No devices have been added yet.</p>
-            @else
-                <div class="table-wrap">
-                    <table>
-                        <thead>
+            </div>
+        @else
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Device</th>
+                            <th>Client / Branch</th>
+                            <th>State</th>
+                            <th>Online</th>
+                            <th>People</th>
+                            <th>Faces</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($devices as $device)
                             <tr>
-                                <th>Device</th>
-                                <th>State</th>
-                                <th>Online</th>
-                                <th>Actions</th>
+                                <td>
+                                    <div class="td-primary">{{ $device->display_name }}</div>
+                                    <div class="td-sub" style="font-family: monospace; font-size: 11px;">{{ $device->device_key }}</div>
+                                </td>
+                                <td>
+                                    @if ($device->client_name || $device->branch_name)
+                                        <div class="font-semibold" style="font-size: 13px;">{{ $device->client_name ?? '—' }}</div>
+                                        <div class="td-sub">{{ $device->branch_name ?? '—' }}</div>
+                                    @else
+                                        <span class="text-muted text-sm">—</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if ($device->is_managed)
+                                        <span class="badge {{ $device->is_active ? 'badge-good' : 'badge-warn' }}">
+                                            {{ $device->is_active ? 'Active' : 'Inactive' }}
+                                        </span>
+                                    @else
+                                        <span class="badge badge-neutral">Callback only</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if ($device->is_online)
+                                        <span class="badge badge-good">Online</span>
+                                    @elseif ($device->last_seen_at)
+                                        <span class="badge badge-warn">Stale</span>
+                                    @else
+                                        <span class="badge badge-bad">No heartbeat</span>
+                                    @endif
+                                    <div class="td-sub" style="margin-top: 4px;">{{ $device->last_seen_at?->diffForHumans() ?? 'Never' }}</div>
+                                </td>
+                                <td class="text-muted">{{ $device->person_count ?? '—' }}</td>
+                                <td class="text-muted">{{ $device->face_count ?? '—' }}</td>
+                                <td>
+                                    <div class="td-actions">
+                                        <a href="{{ route('admin.devices.edit', $device) }}"
+                                           class="btn btn-secondary btn-xs"
+                                           title="Edit device">
+                                            <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+                                            Edit
+                                        </a>
+                                        <div class="dropdown-wrap" style="position:relative;">
+                                            <button class="btn btn-ghost btn-xs" onclick="toggleMenu(this)" title="More actions">
+                                                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z"/></svg>
+                                            </button>
+                                            <div class="action-menu" style="display:none; position:absolute; right:0; top:100%; margin-top:4px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-md); min-width:170px; z-index:60; overflow:hidden;">
+                                                <form method="post" action="{{ route('admin.devices.status', $device) }}">
+                                                    @csrf
+                                                    <button type="submit" class="menu-item">
+                                                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                                                        Refresh Status
+                                                    </button>
+                                                </form>
+                                                <form method="post" action="{{ route('admin.devices.configure-callbacks', $device) }}">
+                                                    @csrf
+                                                    <button type="submit" class="menu-item">
+                                                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                                                        Setup Callbacks
+                                                    </button>
+                                                </form>
+                                                <form method="post" action="{{ route('admin.devices.open-door', $device) }}">
+                                                    @csrf
+                                                    <button type="submit" class="menu-item">
+                                                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+                                                        Open Door
+                                                    </button>
+                                                </form>
+                                                <form method="post" action="{{ route('admin.devices.reboot', $device) }}">
+                                                    @csrf
+                                                    <button type="submit" class="menu-item">
+                                                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
+                                                        Reboot Device
+                                                    </button>
+                                                </form>
+                                                <form method="post" action="{{ route('admin.devices.resync-users', $device) }}">
+                                                    @csrf
+                                                    <button type="submit" class="menu-item">
+                                                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zm0 2a6 6 0 016 6H2a6 6 0 016-6zm6-8a2 2 0 100 4 2 2 0 000-4zm0 6a5.98 5.98 0 012.5.55 4.002 4.002 0 01-2.494 3.432A5.995 5.995 0 0014 9z"/></svg>
+                                                        Resync Users
+                                                    </button>
+                                                </form>
+                                                <div style="border-top: 1px solid var(--border-soft); margin: 4px 0;"></div>
+                                                <form method="post" action="{{ route('admin.devices.destroy', $device) }}" onsubmit="return confirm('Remove this device from managed devices?')">
+                                                    @csrf
+                                                    @method('delete')
+                                                    <button type="submit" class="menu-item menu-item-danger">
+                                                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zm-1 7a1 1 0 012 0v4a1 1 0 11-2 0V9zm4 0a1 1 0 012 0v4a1 1 0 11-2 0V9z" clip-rule="evenodd"/></svg>
+                                                        Delete Device
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($devices as $device)
-                                <tr>
-                                    <td>
-                                        <strong>{{ $device->display_name }}</strong>
-                                        <div class="subtle">{{ $device->device_key }}</div>
-                                        @if ($device->client_name || $device->branch_name)
-                                            <div class="subtle">{{ trim(($device->client_name ? $device->client_name.' / ' : '').($device->branch_name ?? '')) }}</div>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if ($device->is_managed)
-                                            <span class="pill {{ $device->is_active ? 'good' : 'warn' }}">{{ $device->is_active ? 'Active' : 'Inactive' }}</span>
-                                        @else
-                                            <span class="pill warn">Callback only</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if ($device->is_online)
-                                            <span class="pill good">Online</span>
-                                        @elseif ($device->last_seen_at)
-                                            <span class="pill warn">Stale</span>
-                                        @else
-                                            <span class="pill bad">No heartbeat</span>
-                                        @endif
-                                        <div class="subtle">
-                                            Last seen: {{ $device->last_seen_at?->diffForHumans() ?: 'Never' }}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="inline-actions">
-                                            <a class="btn secondary small" href="{{ route('admin.devices.edit', $device) }}">Edit</a>
-                                            <form method="post" action="{{ route('admin.devices.status', $device) }}">@csrf<button class="small secondary" type="submit">Status</button></form>
-                                            <form method="post" action="{{ route('admin.devices.configure-callbacks', $device) }}">@csrf<button class="small secondary" type="submit">Callbacks</button></form>
-                                            <form method="post" action="{{ route('admin.devices.open-door', $device) }}">@csrf<button class="small" type="submit">Open Door</button></form>
-                                            <form method="post" action="{{ route('admin.devices.reboot', $device) }}">@csrf<button class="small secondary" type="submit">Reboot</button></form>
-                                            <form method="post" action="{{ route('admin.devices.resync-users', $device) }}">@csrf<button class="small secondary" type="submit">Resync Users</button></form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </section>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
     </div>
+
+    <!-- Edit Device inline (when $editingDevice is set) -->
+    @if ($editingDevice)
+        <div class="card mt-20">
+            <div class="card-header">
+                <div class="card-header-left">
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style="color:var(--primary)"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+                    <div>
+                        <div class="card-title">Edit Device</div>
+                        <div class="card-subtitle">{{ $editingDevice->display_name }} &mdash; {{ $editingDevice->device_key }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{{ route('admin.devices.update', $editingDevice) }}" class="form-grid">
+                    @csrf
+                    @method('put')
+                    @include('admin.devices._form', ['device' => $editingDevice])
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <a href="{{ route('admin.devices.index') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
+
+    <!-- Add Device Modal -->
+    @if (!$editingDevice)
+        <div class="modal-backdrop" id="deviceModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <span class="modal-title">Add New Device</span>
+                    <button class="modal-close" onclick="closeModal('deviceModal')" type="button" aria-label="Close">
+                        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                    </button>
+                </div>
+                <form method="post" action="{{ route('admin.devices.store') }}">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="form-grid">
+                            @include('admin.devices._form', ['device' => null])
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('deviceModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Device</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        @if ($errors->any() || old('device_key'))
+            <script>document.addEventListener('DOMContentLoaded', function() { openModal('deviceModal'); });</script>
+        @endif
+    @endif
+
+    <style>
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 9px 14px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-2);
+            text-align: left;
+            transition: background 0.1s;
+        }
+        .menu-item:hover { background: var(--bg); }
+        .menu-item-danger { color: var(--bad); }
+        .menu-item-danger:hover { background: var(--bad-soft); }
+        .dropdown-wrap { display: inline-block; }
+    </style>
+
+    <script>
+        function toggleMenu(btn) {
+            const menu = btn.nextElementSibling;
+            const isOpen = menu.style.display === 'block';
+            // Close all open menus
+            document.querySelectorAll('.action-menu').forEach(m => m.style.display = 'none');
+            if (!isOpen) {
+                menu.style.display = 'block';
+                // Close when clicking outside
+                setTimeout(() => {
+                    document.addEventListener('click', function close(e) {
+                        if (!menu.contains(e.target) && e.target !== btn) {
+                            menu.style.display = 'none';
+                            document.removeEventListener('click', close);
+                        }
+                    });
+                }, 0);
+            }
+        }
+    </script>
 @endsection

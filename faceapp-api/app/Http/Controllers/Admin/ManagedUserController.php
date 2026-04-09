@@ -25,6 +25,7 @@ class ManagedUserController extends Controller
             ->get();
 
         $selectedDeviceId = $request->integer('device_id') ?: null;
+        $selectedDevice = $devices->firstWhere('id', $selectedDeviceId);
         $search = trim((string) $request->query('q', ''));
 
         $users = ManagedUser::query()
@@ -38,7 +39,6 @@ class ManagedUserController extends Controller
                         ->orWhere('role', 'like', '%'.$search.'%');
                 });
             })
-            ->when($selectedDeviceId, fn ($query) => $query->whereHas('syncs', fn ($syncs) => $syncs->where('device_id', $selectedDeviceId)))
             ->orderBy('name')
             ->paginate(12)
             ->withQueryString();
@@ -52,6 +52,7 @@ class ManagedUserController extends Controller
         return view('admin.users.index', [
             'devices' => $devices,
             'selectedDeviceId' => $selectedDeviceId,
+            'selectedDevice' => $selectedDevice,
             'search' => $search,
             'users' => $users,
             'latestEnrollments' => $latestEnrollments,
