@@ -1,0 +1,9 @@
+{$FACEAPP_DOMAIN} {
+    encode zstd gzip
+    reverse_proxy frontend:80
+}
+
+{$FACEAPP_API_DOMAIN} {
+    encode zstd gzip
+    reverse_proxy api:80
+}
