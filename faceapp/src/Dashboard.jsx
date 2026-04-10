@@ -2,7 +2,7 @@ import './Dashboard.css'
 
 const STATUS_CONFIG = {
   active: { label: 'Active', color: 'green' },
-  pending: { label: 'Pending', color: 'amber' },
+  pending: { label: 'Syncing', color: 'amber' },
   inactive: { label: 'Inactive', color: 'red' },
 }
 

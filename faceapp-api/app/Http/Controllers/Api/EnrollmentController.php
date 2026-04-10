@@ -25,7 +25,11 @@ class EnrollmentController extends Controller
 
         return response()->json([
             'ok' => true,
-            'message' => 'Face enrollment verified on device.',
+            'message' => match ($enrollment->status) {
+                'partial' => 'Face enrollment completed, but some devices still need attention.',
+                'verified' => 'Face enrollment verified on active devices.',
+                default => 'Face enrollment completed.',
+            },
             'enrollment' => $this->transform($enrollment),
         ], 201);
     }

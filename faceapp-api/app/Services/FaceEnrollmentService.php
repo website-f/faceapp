@@ -94,7 +94,7 @@ class FaceEnrollmentService
                 ])->save();
             }
 
-            if ($status !== 'verified') {
+            if ($successCount === 0) {
                 throw new RuntimeException($enrollment->error_message ?: 'Face enrollment did not complete on every active device.');
             }
 

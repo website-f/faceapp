@@ -14,7 +14,7 @@ function normalizeUserSummary(user) {
     role: user.role || 'No role set',
     department: user.department || 'No department set',
     employeeId: user.employee_id,
-    status: user.status || 'pending',
+    status: user.status || 'inactive',
   }
 }
 
@@ -39,7 +39,7 @@ function normalizeSelectedUser(user) {
     employeeId: user.employee_id,
     joined: user.joined || 'Not set',
     accessLevel: user.access_level || 'Not set',
-    status: user.status || 'pending',
+    status: user.status || 'inactive',
     faceId: user.recognition_id,
     facePhoto: user.face_photo,
     enrolledAt,
@@ -162,7 +162,15 @@ export default function App() {
         ? result.enrollment.sync_results.filter((sync) => sync.status === 'verified').length
         : 0
 
-      showToast(`Face enrolled on ${verifiedDevices} device${verifiedDevices === 1 ? '' : 's'}.`)
+      const totalDevices = Array.isArray(result.enrollment.sync_results)
+        ? result.enrollment.sync_results.length
+        : activeDevices.length
+
+      if (result.enrollment.status === 'partial') {
+        showToast(`Face enrolled on ${verifiedDevices} of ${totalDevices} devices. Check the sync status for the rest.`, 'warning')
+      } else {
+        showToast(`Face enrolled on ${verifiedDevices} device${verifiedDevices === 1 ? '' : 's'}.`)
+      }
       setCapturedPhoto(null)
       setView(VIEW.DASHBOARD)
     } catch (error) {
@@ -171,7 +179,7 @@ export default function App() {
     } finally {
       setSaving(false)
     }
-  }, [capturedPhoto, loadDashboard, showToast, user])
+  }, [activeDevices.length, capturedPhoto, loadDashboard, showToast, user])
 
   const handleRetake = useCallback(() => {
     setCapturedPhoto(null)
@@ -217,6 +225,12 @@ export default function App() {
             {toast.type === 'success' ? (
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
+              </svg>
+            ) : toast.type === 'warning' ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                <path d="M12 9v4" />
+                <path d="M12 17h.01" />
               </svg>
             ) : (
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">

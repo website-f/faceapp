@@ -3,6 +3,73 @@ import './Camera.css'
 
 const FACING_MODES = { USER: 'user', ENVIRONMENT: 'environment' }
 
+function isLocalCameraHost(hostname) {
+  return hostname === 'localhost'
+    || hostname === '127.0.0.1'
+    || hostname === '[::1]'
+    || hostname.endsWith('.localhost')
+}
+
+function canUseCameraApi() {
+  return typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getUserMedia === 'function'
+}
+
+function hasSecureCameraContext() {
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  return window.isSecureContext || isLocalCameraHost(window.location.hostname)
+}
+
+function buildCameraConstraints(mode) {
+  return [
+    {
+      video: {
+        facingMode: { ideal: mode },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+      audio: false,
+    },
+    {
+      video: {
+        facingMode: { ideal: mode },
+      },
+      audio: false,
+    },
+    {
+      video: true,
+      audio: false,
+    },
+  ]
+}
+
+function buildCameraError(err) {
+  if (!canUseCameraApi()) {
+    return 'This browser does not support camera access. Use the latest Chrome, Edge, Safari, or Firefox.'
+  }
+
+  if (!hasSecureCameraContext()) {
+    return 'Desktop browsers only allow camera access on HTTPS or localhost. Open FaceApp on HTTPS and try again.'
+  }
+
+  switch (err?.name) {
+    case 'NotAllowedError':
+    case 'SecurityError':
+      return 'Camera access is blocked. Allow camera permission in your browser settings, then try again.'
+    case 'NotFoundError':
+      return 'No camera was found on this device. Connect a webcam and try again.'
+    case 'NotReadableError':
+    case 'AbortError':
+      return 'The camera is busy in another app or browser tab. Close the other app and try again.'
+    case 'OverconstrainedError':
+      return 'This camera does not support the preferred mode. Try again to use the default camera.'
+    default:
+      return 'Unable to start the camera right now. Try again in a moment.'
+  }
+}
+
 export default function Camera({ onCapture, onClose }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
@@ -10,52 +77,127 @@ export default function Camera({ onCapture, onClose }) {
 
   const [facing, setFacing] = useState(FACING_MODES.USER)
   const [ready, setReady] = useState(false)
+  const [starting, setStarting] = useState(false)
+  const [awaitingStart, setAwaitingStart] = useState(false)
   const [countdown, setCountdown] = useState(null)
   const [flash, setFlash] = useState(false)
   const [error, setError] = useState(null)
   const [scanning, setScanning] = useState(false)
 
-  const startCamera = useCallback(async (mode) => {
-    setReady(false)
-    setError(null)
+  const stopCamera = useCallback(() => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop())
+      streamRef.current.getTracks().forEach((track) => track.stop())
+      streamRef.current = null
     }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: mode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      })
-      streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play()
-          setReady(true)
-        }
-      }
-    } catch (err) {
-      setError('Camera access denied. Please allow camera permissions.')
-      console.error(err)
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
     }
+
+    setReady(false)
   }, [])
 
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      startCamera(FACING_MODES.USER)
-    }, 0)
+  const startCamera = useCallback(async (mode) => {
+    if (!canUseCameraApi() || !hasSecureCameraContext()) {
+      setAwaitingStart(false)
+      setError(buildCameraError())
+      return
+    }
 
-    return () => {
-      clearTimeout(timeoutId)
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(t => t.stop())
+    setStarting(true)
+    setAwaitingStart(false)
+    setError(null)
+
+    stopCamera()
+
+    let lastError = null
+
+    for (const constraints of buildCameraConstraints(mode)) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints)
+        streamRef.current = stream
+
+        if (videoRef.current) {
+          const video = videoRef.current
+          video.srcObject = stream
+
+          await new Promise((resolve) => {
+            if (video.readyState >= 1) {
+              resolve()
+              return
+            }
+
+            video.onloadedmetadata = () => resolve()
+          })
+
+          try {
+            await video.play()
+          } catch (playError) {
+            console.warn('Camera preview play() was blocked by the browser.', playError)
+          }
+        }
+
+        setReady(true)
+        setStarting(false)
+        return
+      } catch (err) {
+        lastError = err
+
+        if (err?.name === 'NotAllowedError' || err?.name === 'SecurityError' || err?.name === 'NotReadableError') {
+          break
+        }
       }
     }
-  }, [startCamera])
+
+    stopCamera()
+    setStarting(false)
+    setError(buildCameraError(lastError))
+    console.error(lastError)
+  }, [stopCamera])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const prepareCamera = async () => {
+      if (!canUseCameraApi() || !hasSecureCameraContext()) {
+        setError(buildCameraError())
+        return
+      }
+
+      if (typeof navigator.permissions?.query === 'function') {
+        try {
+          const permission = await navigator.permissions.query({ name: 'camera' })
+
+          if (cancelled) {
+            return
+          }
+
+          if (permission.state === 'granted') {
+            startCamera(FACING_MODES.USER)
+            return
+          }
+
+          if (permission.state === 'denied') {
+            setError(buildCameraError({ name: 'NotAllowedError' }))
+            return
+          }
+        } catch (err) {
+          console.warn('Camera permission state could not be queried.', err)
+        }
+      }
+
+      if (!cancelled) {
+        setAwaitingStart(true)
+      }
+    }
+
+    prepareCamera()
+
+    return () => {
+      cancelled = true
+      stopCamera()
+    }
+  }, [startCamera, stopCamera])
 
   const flipCamera = () => {
     const newMode = facing === FACING_MODES.USER ? FACING_MODES.ENVIRONMENT : FACING_MODES.USER
@@ -86,7 +228,6 @@ export default function Camera({ onCapture, onClose }) {
     canvas.height = video.videoHeight
     const ctx = canvas.getContext('2d')
 
-    // Mirror if front cam
     if (facing === FACING_MODES.USER) {
       ctx.translate(canvas.width, 0)
       ctx.scale(-1, 1)
@@ -104,9 +245,12 @@ export default function Camera({ onCapture, onClose }) {
     }, 2200)
   }
 
+  const hintText = ready
+    ? 'Position your face within the frame'
+    : 'Use HTTPS or localhost on desktop, then allow camera access when prompted'
+
   return (
     <div className="camera-overlay animate-slideUp">
-      {/* Header */}
       <div className="camera-header glass">
         <button className="cam-icon-btn" onClick={onClose} aria-label="Close camera">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -122,7 +266,6 @@ export default function Camera({ onCapture, onClose }) {
         </button>
       </div>
 
-      {/* Video Viewport */}
       <div className="camera-viewport">
         {error ? (
           <div className="cam-error">
@@ -145,10 +288,8 @@ export default function Camera({ onCapture, onClose }) {
               autoPlay
             />
 
-            {/* Flash Overlay */}
             {flash && <div className="cam-flash" />}
 
-            {/* Face Guide Frame */}
             <div className={`face-guide ${ready ? 'visible' : ''}`}>
               <div className="guide-corner tl" />
               <div className="guide-corner tr" />
@@ -157,28 +298,40 @@ export default function Camera({ onCapture, onClose }) {
               {scanning && <div className="scan-line" />}
             </div>
 
-            {/* Countdown Overlay */}
             {countdown !== null && (
               <div className="cam-countdown animate-fadeIn">
                 <span>{countdown}</span>
               </div>
             )}
 
-            {/* Scanning animation */}
             {scanning && (
               <div className="cam-scanning animate-fadeIn">
                 <div className="scanning-dots">
                   <span /><span /><span />
                 </div>
-                <p>Analyzing face…</p>
+                <p>Analyzing face...</p>
               </div>
             )}
 
-            {/* Ready indicator */}
-            {!ready && !error && (
+            {awaitingStart && !starting && !ready && (
+              <div className="cam-loading cam-prompt">
+                <div className="cam-permission-icon">
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
+                </div>
+                <p>Tap below to let this browser open your camera.</p>
+                <button className="btn-primary" onClick={() => startCamera(facing)}>
+                  Open Camera
+                </button>
+              </div>
+            )}
+
+            {starting && !ready && !error && (
               <div className="cam-loading">
                 <div className="cam-spinner" />
-                <p>Initializing camera…</p>
+                <p>Initializing camera...</p>
               </div>
             )}
           </>
@@ -186,10 +339,8 @@ export default function Camera({ onCapture, onClose }) {
         <canvas ref={canvasRef} style={{ display: 'none' }} />
       </div>
 
-      {/* Hint */}
-      <p className="cam-hint">Position your face within the frame</p>
+      <p className="cam-hint">{hintText}</p>
 
-      {/* Shutter Button */}
       <div className="camera-controls">
         <button
           id="shutter-btn"

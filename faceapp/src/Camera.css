@@ -235,6 +235,15 @@
   opacity: 0.8;
 }
 
+.cam-permission-icon {
+  color: var(--accent);
+  opacity: 0.9;
+}
+
+.cam-prompt p {
+  max-width: 320px;
+}
+
 /* ─── Hint ─── */
 .cam-hint {
   padding: 12px 16px;

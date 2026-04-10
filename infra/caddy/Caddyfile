@@ -1,5 +1,8 @@
 {$FACEAPP_DOMAIN} {
     encode zstd gzip
+    header {
+        Permissions-Policy "camera=(self)"
+    }
     reverse_proxy frontend:80
 }
 

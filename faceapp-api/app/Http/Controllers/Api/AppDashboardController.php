@@ -57,7 +57,7 @@ class AppDashboardController extends Controller
             'department' => $user->department,
             'status' => $this->resolveStatus($user, $latestEnrollment),
             'face_photo' => $user->photo_public_url,
-            'recognition_id' => $latestEnrollment?->public_id ?? $user->public_id,
+            'recognition_id' => $this->resolveRecognitionId($user, $latestEnrollment),
         ];
     }
 
@@ -76,7 +76,7 @@ class AppDashboardController extends Controller
             'access_level' => $user->access_level ?: 'Not set',
             'status' => $this->resolveStatus($user, $latestEnrollment),
             'face_photo' => $user->photo_public_url,
-            'recognition_id' => $latestEnrollment?->public_id ?? $user->public_id,
+            'recognition_id' => $this->resolveRecognitionId($user, $latestEnrollment),
             'enrolled_at' => $user->last_enrolled_at?->toIso8601String(),
             'activity' => $events,
             'device_syncs' => $user->syncs
@@ -154,14 +154,36 @@ class AppDashboardController extends Controller
 
     protected function resolveStatus(ManagedUser $user, ?Enrollment $latestEnrollment): string
     {
-        if ($latestEnrollment?->status === 'verified' || $user->syncs->contains(fn ($sync) => $sync->face_status === 'verified')) {
+        if ($this->hasVerifiedFace($user, $latestEnrollment)) {
             return 'active';
         }
 
-        if ($latestEnrollment?->status === 'partial' || $user->syncs->contains(fn ($sync) => in_array($sync->sync_status, ['pending', 'synced'], true))) {
+        if ($latestEnrollment?->status === 'pending' || $user->syncs->contains(fn ($sync) => $sync->sync_status === 'pending')) {
             return 'pending';
         }
 
         return 'inactive';
+    }
+
+    protected function resolveRecognitionId(ManagedUser $user, ?Enrollment $latestEnrollment): ?string
+    {
+        if ($latestEnrollment && in_array($latestEnrollment->status, ['verified', 'partial'], true)) {
+            return $latestEnrollment->public_id;
+        }
+
+        if ($user->syncs->contains(fn ($sync) => $sync->face_status === 'verified')) {
+            return $user->employee_id;
+        }
+
+        return null;
+    }
+
+    protected function hasVerifiedFace(ManagedUser $user, ?Enrollment $latestEnrollment): bool
+    {
+        if ($latestEnrollment && in_array($latestEnrollment->status, ['verified', 'partial'], true)) {
+            return true;
+        }
+
+        return $user->syncs->contains(fn ($sync) => $sync->face_status === 'verified');
     }
 }

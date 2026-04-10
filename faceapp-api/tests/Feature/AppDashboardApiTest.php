@@ -80,4 +80,46 @@ class AppDashboardApiTest extends TestCase
 
         $this->assertNotEmpty($response->json('selected_user.activity'));
     }
+
+    public function test_it_keeps_users_inactive_until_a_face_is_actually_enrolled(): void
+    {
+        $device = Device::query()->create([
+            'device_key' => 'DEVICE1234567890',
+            'secret' => 'secret123',
+            'name' => 'HQ Lobby',
+            'is_managed' => true,
+            'is_active' => true,
+            'last_seen_at' => now(),
+            'person_type_default' => 1,
+            'verify_style_default' => 1,
+            'ac_group_number_default' => 0,
+            'photo_quality_default' => 1,
+        ]);
+
+        $user = ManagedUser::query()->create([
+            'employee_id' => 'EMP4829',
+            'name' => 'Alexandra Chen',
+            'role' => 'Senior Engineer',
+            'department' => 'Platform Infrastructure',
+            'access_level' => 'Level 3',
+            'is_active' => true,
+        ]);
+
+        ManagedUserDeviceSync::query()->create([
+            'managed_user_id' => $user->id,
+            'device_id' => $device->id,
+            'sync_status' => 'synced',
+            'face_status' => null,
+            'last_synced_at' => now(),
+        ]);
+
+        $response = $this->getJson('/api/app/dashboard?managed_user_id='.$user->id);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('users.0.status', 'inactive')
+            ->assertJsonPath('users.0.recognition_id', null)
+            ->assertJsonPath('selected_user.status', 'inactive')
+            ->assertJsonPath('selected_user.recognition_id', null);
+    }
 }
