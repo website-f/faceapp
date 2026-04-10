@@ -24,6 +24,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
     Route::delete('/devices/{device}', [ManagedDeviceController::class, 'destroy'])->name('devices.destroy');
     Route::post('/devices/{device}/status', [ManagedDeviceController::class, 'status'])->name('devices.status');
     Route::post('/devices/{device}/configure-callbacks', [ManagedDeviceController::class, 'configureCallbacks'])->name('devices.configure-callbacks');
+    Route::post('/devices/{device}/import-users', [ManagedDeviceController::class, 'importUsers'])->name('devices.import-users');
     Route::post('/devices/{device}/open-door', [ManagedDeviceController::class, 'openDoor'])->name('devices.open-door');
     Route::post('/devices/{device}/reboot', [ManagedDeviceController::class, 'reboot'])->name('devices.reboot');
     Route::post('/devices/{device}/resync-users', [ManagedDeviceController::class, 'resyncUsers'])->name('devices.resync-users');

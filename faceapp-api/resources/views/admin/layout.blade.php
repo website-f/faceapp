@@ -433,25 +433,42 @@
         .field label { font-size: 13px; font-weight: 600; color: var(--text-2); }
         .field label .req { color: var(--bad); margin-left: 2px; }
         .field-hint { font-size: 12px; color: var(--muted); }
-        .input, input[type="text"], input[type="number"], input[type="email"],
-        input[type="password"], input[type="url"], input[type="date"],
+        .input,
+        input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]),
         textarea, select {
             width: 100%;
             background: var(--surface);
-            border: 1px solid var(--border);
+            border: 1.5px solid var(--border);
             border-radius: var(--radius);
             padding: 9px 12px;
             color: var(--text);
             font-size: 14px;
             font-family: inherit;
+            line-height: 1.5;
             transition: border-color 0.15s, box-shadow 0.15s;
             appearance: none;
+            -webkit-appearance: none;
         }
-        .input:focus, input:focus, textarea:focus, select:focus {
+        .input:focus,
+        input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):focus,
+        textarea:focus, select:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
         }
+        .input:hover,
+        input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):hover:not(:focus),
+        textarea:hover:not(:focus), select:hover:not(:focus) {
+            border-color: #94a3b8;
+        }
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 20 20' fill='%2364748b'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 34px;
+        }
+        input[readonly] { background: var(--surface-2); color: var(--muted); cursor: not-allowed; }
+        ::placeholder { color: var(--muted-light); }
         textarea { min-height: 100px; resize: vertical; }
         .checkbox-field { display: flex; align-items: center; gap: 10px; }
         .checkbox-field input[type="checkbox"] {

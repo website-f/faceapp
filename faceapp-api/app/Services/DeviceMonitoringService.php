@@ -7,9 +7,14 @@ use App\Models\DeviceEvent;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use RuntimeException;
+use Throwable;
 
 class DeviceMonitoringService
 {
+    public function __construct(
+        protected readonly ManagedUserSyncService $userSyncs,
+    ) {}
+
     public function recordHeartbeat(array $payload): Device
     {
         $device = Device::firstOrNew([
@@ -67,6 +72,12 @@ class DeviceMonitoringService
         $eventTime = $this->resolveTimestamp($payload['time'] ?? null) ?? now()->toImmutable();
 
         $device = $this->touchDevice($payload);
+
+        try {
+            $this->userSyncs->importUserRegistrationCallback($device, $payload);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
 
         return $this->storeEvent(
             eventType: 'person_registration',

@@ -146,6 +146,26 @@ class ManagedDeviceController extends Controller
             ->with('action_response', $results);
     }
 
+    public function importUsers(Device $device, ManagedUserSyncService $syncs): RedirectResponse
+    {
+        try {
+            $results = $syncs->importUsersFromDevice($device);
+        } catch (Throwable $exception) {
+            return back()->with('error', 'Import users failed: '.$exception->getMessage());
+        }
+
+        $imported = count($results);
+
+        return redirect()
+            ->route('admin.users.index', [
+                'device_id' => $device->id,
+            ])
+            ->with('status', $imported === 0
+                ? 'No users were returned by '.$device->display_name.'.'
+                : 'Imported or refreshed '.$imported.' user'.($imported === 1 ? '' : 's').' from '.$device->display_name.'.')
+            ->with('action_response', $results);
+    }
+
     protected function view(?Device $editingDevice = null): View
     {
         return view('admin.devices.index', [

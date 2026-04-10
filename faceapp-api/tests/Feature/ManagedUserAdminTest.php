@@ -41,6 +41,7 @@ class ManagedUserAdminTest extends TestCase
             ->assertOk()
             ->assertSeeText('Alexandra Chen')
             ->assertSeeText('EMP4829')
-            ->assertSeeText('Not synced yet');
+            ->assertSeeText('Not synced')
+            ->assertSeeText('Not yet pushed to this device.');
     }
 }

@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Device;
 use App\Models\Enrollment;
+use App\Models\ManagedUser;
+use App\Models\ManagedUserDeviceSync;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Facades\Http;
@@ -78,7 +80,7 @@ class DeviceMonitoringTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSeeText('FaceApp Device Monitor')
+            ->assertSeeText('Callback Monitor')
             ->assertSeeText('DEVICE1234567890')
             ->assertSeeText('Gateway Reachable')
             ->assertSeeText('Nadia Tan')
@@ -121,5 +123,65 @@ class DeviceMonitoringTest extends TestCase
                 && $request['sevUploadRegPersonUrl'] === $expectedPersonRegistrationUrl
                 && (string) $request['sevUploadDevHeartbeatInterval'] === '75';
         });
+    }
+
+    public function test_person_registration_callback_creates_or_updates_local_user_sync(): void
+    {
+        Device::query()->create([
+            'device_key' => 'DEVICE1234567890',
+            'name' => 'Main Gate',
+            'secret' => 'secret123',
+            'is_managed' => true,
+            'is_active' => true,
+            'display_order' => 0,
+            'person_type_default' => 1,
+            'verify_style_default' => 1,
+            'ac_group_number_default' => 0,
+            'photo_quality_default' => 1,
+        ]);
+
+        ManagedUser::query()->create([
+            'employee_id' => 'EMP4829',
+            'name' => 'Alexandra Chen',
+            'role' => 'Engineer',
+            'is_active' => true,
+            'person_type' => 1,
+            'verify_style' => 1,
+            'ac_group_number' => 0,
+        ]);
+
+        $response = $this->post('/api/device/callbacks/person-registrations', [
+            'deviceKey' => 'DEVICE1234567890',
+            'personType' => 1,
+            'personSn' => 'EMP4829',
+            'name' => 'Alexandra Device Name',
+            'mobile' => '12345',
+            'cardNo' => 'CARD100',
+            'verifyStyle' => 20,
+            'acGroupNumber' => 3,
+            'time' => '1712659200000',
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertSeeText('ok');
+
+        $this->assertDatabaseHas('managed_users', [
+            'employee_id' => 'EMP4829',
+            'name' => 'Alexandra Chen',
+            'role' => 'Engineer',
+            'mobile' => '12345',
+            'card_no' => 'CARD100',
+            'verify_style' => 20,
+            'ac_group_number' => 3,
+        ]);
+
+        $this->assertSame(1, ManagedUserDeviceSync::query()->count());
+
+        $this->assertDatabaseHas('device_events', [
+            'device_key' => 'DEVICE1234567890',
+            'event_type' => 'person_registration',
+            'person_sn' => 'EMP4829',
+        ]);
     }
 }

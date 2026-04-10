@@ -67,6 +67,14 @@ class GatewaySdkClient
         ], requireBusinessSuccess: false);
     }
 
+    public function findPersonList(int $index = 1, int $length = 20): array
+    {
+        return $this->post('/person/findList', [
+            'index' => $index,
+            'length' => $length,
+        ]);
+    }
+
     public function createPerson(array $person): array
     {
         return $this->post('/person/create', $this->personPayload($person));
@@ -134,6 +142,62 @@ class GatewaySdkClient
         }
 
         return false;
+    }
+
+    public function extractPersonList(?array $response): array
+    {
+        $data = $response['data'] ?? null;
+
+        if (is_array($data) && array_is_list($data)) {
+            return array_values(array_filter($data, 'is_array'));
+        }
+
+        if (! is_array($data)) {
+            return [];
+        }
+
+        foreach (['list', 'rows', 'records', 'personList', 'dataList', 'items'] as $key) {
+            $items = $data[$key] ?? null;
+
+            if (is_array($items) && array_is_list($items)) {
+                return array_values(array_filter($items, 'is_array'));
+            }
+        }
+
+        if (array_key_exists('sn', $data) || array_key_exists('personSn', $data)) {
+            return [$data];
+        }
+
+        return [];
+    }
+
+    public function personListHasMore(?array $response, int $page, int $length, int $itemsCount): bool
+    {
+        $data = $response['data'] ?? null;
+
+        if (is_array($data)) {
+            foreach (['total', 'count', 'totalCount'] as $key) {
+                $total = $data[$key] ?? null;
+
+                if (is_numeric($total)) {
+                    return ((int) $total) > ($page * $length);
+                }
+            }
+
+            foreach (['hasNext', 'hasMore', 'nextPage'] as $key) {
+                $flag = $data[$key] ?? null;
+
+                if (is_bool($flag)) {
+                    return $flag;
+                }
+
+                if ($key === 'nextPage' && is_numeric($flag)) {
+                    return (int) $flag > $page;
+                }
+            }
+        }
+
+        return $itemsCount >= $length && $itemsCount > 0;
     }
 
     protected function personPayload(array $person): array

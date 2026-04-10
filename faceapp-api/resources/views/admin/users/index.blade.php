@@ -7,6 +7,15 @@
             <p>Manage the central user directory. Changes sync automatically to all active devices.</p>
         </div>
         <div class="page-header-actions">
+            @if ($selectedDevice)
+                <form method="post" action="{{ route('admin.devices.import-users', $selectedDevice) }}">
+                    @csrf
+                    <button type="submit" class="btn btn-secondary btn-sm">
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M3 10a1 1 0 011-1h7V6a1 1 0 112 0v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H4a1 1 0 01-1-1z"/></svg>
+                        Pull From Device
+                    </button>
+                </form>
+            @endif
             <a href="{{ route('admin.users.create') }}" class="btn btn-primary btn-sm">
                 <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
                 Add User
@@ -76,6 +85,9 @@
                     </div>
                 </div>
             </div>
+            @if ($selectedDevice)
+                <div class="text-sm text-muted">Pull users from the device to create or refresh local records and sync rows.</div>
+            @endif
         </div>
 
         @if ($users->isEmpty())
